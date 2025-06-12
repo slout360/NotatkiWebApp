@@ -1,0 +1,38 @@
+﻿@model NotatkiWebApp.Models.Notatka
+
+@{
+    ViewData["Title"] = "Usuń notatkę";
+}
+
+<h1 class="mb-4">
+    <i class="bi bi-exclamation-triangle-fill text-warning"></i> Usuń notatkę
+</h1>
+
+<div class="alert alert-warning" role="alert">
+    Czy na pewno chcesz <strong>usunąć</strong> tę notatkę? Operacji nie da się cofnąć.
+</div>
+
+<div>
+    <h4>Notatka do usunięcia:</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.Tytul)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(m => m.Tytul)</dd>
+
+        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.Tresc)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(m => m.Tresc)</dd>
+
+        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.Kategoria)</dt>
+        <dd class="col-sm-10">
+            <span class="badge @CategoryColorHelper.GetBadgeClass(Model.Kategoria.ToString())">
+                @Model.Kategoria
+            </span>
+        </dd>
+    </dl>
+
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger me-2">Usuń</button>
+        <a asp-action="Index" class="btn btn-secondary">Anuluj</a>
+    </form>
+</div>

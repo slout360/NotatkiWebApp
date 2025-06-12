@@ -1,0 +1,171 @@
+﻿@model IEnumerable<NotatkiWebApp.Models.Notatka>
+@using NotatkiWebApp.Helpers
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Notatki</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Stwórz Nowe</a>
+</p>
+
+<input type="text" id="searchBox" name="searchString" class="form-control" placeholder="Szukaj..." value="@Context.Request.Query["searchString"]" />
+<form asp-action="Index" method="get" class="mb-4">
+    <div class="dropdown mb-3">
+        <button class="btn btn-outline-info dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+            Filtry
+        </button>
+        <div class="dropdown-menu p-4" style="min-width: 300px;">
+
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="favoriteOnly" name="favoriteOnly" value="true"
+                @(Context.Request.Query["favoriteOnly"] == "true" ? "checked" : "") />
+                <label class="form-check-label" for="favoriteOnly">Ulubione</label>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Kategorie:</label>
+                @{
+                    var selectedCategories = Context.Request.Query["categoryFilter"];
+                    foreach (var kat in Enum.GetValues(typeof(NotatkiWebApp.Models.Kategoria)))
+                    {
+                        var katStr = kat.ToString();
+                        bool isChecked = selectedCategories.Contains(katStr);
+                        <div class="form-check">
+                            <input class="form-check-input category-checkbox" type="checkbox" name="categoryFilter" value="@katStr" id="@katStr"
+                            @(isChecked ? "checked" : "") />
+                            <label class="form-check-label" for="@katStr">@katStr</label>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Data od:</label>
+                <input type="date" name="fromDate" class="form-control" value="@Context.Request.Query["fromDate"]" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Data do:</label>
+                <input type="date" name="toDate" class="form-control" value="@Context.Request.Query["toDate"]" />
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">Filtruj</button>
+                <a href="@Url.Action("Index")" class="btn btn-secondary">Wyczyść wszystkie filtry</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-2">
+        <div class="col-md-4">
+            <select name="sortOrder" class="form-select" onchange="this.form.submit()">
+                @{
+                    var currentSort = ViewData["CurrentSort"]?.ToString();
+                }
+                <option value="">Tytuł rosnąco</option>
+                <option value="title_desc" selected="@(currentSort == "title_desc" ? "selected" : null)">Tytuł malejąco</option>
+                <option value="Date" selected="@(currentSort == "Date" ? "selected" : null)">Data rosnąco</option>
+                <option value="date_desc" selected="@(currentSort == "date_desc" ? "selected" : null)">Data malejąco</option>
+            </select>
+        </div>
+    </div>
+</form>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    @foreach (var item in Model)
+    {
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title d-flex justify-content-between">
+                        @item.Tytul
+                        <span class="badge @CategoryColorHelper.GetBadgeClass(item.Kategoria.ToString())">@item.Kategoria</span>
+                    </h5>
+                    <h5 class="card-title d-flex justify-content-between align-items-start">
+                        <form asp-action="ToggleFavorite" method="post" asp-route-id="@item.Id" style="display:inline;">
+                            <input type="hidden" name="returnUrl" value="@Url.Action("Index")" />
+                            <button type="submit" class="btn btn-link p-0" style="color: @(item.Ulubiona ? "red" : "#ccc")" title="Ulubiona">
+                                <i class="bi bi-heart@(item.Ulubiona ? "-fill" : "")"></i>
+                            </button>
+                        </form>
+                    </h5>
+                    <p class="card-text" style="white-space: normal; word-break: break-word;">
+                        @{
+                            var skrot = item.Tresc?.Length > 150
+                            ? item.Tresc.Substring(0, 150) + "..."
+                            : item.Tresc;
+                        }
+                        @skrot
+                    </p>
+                    <p class="text-muted small mb-0">Dodano: @item.DataUtworzenia.ToShortDateString()</p>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Szczegóły</a>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Edytuj</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Usuń</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+    const searchBox = document.getElementById('searchBox');
+    let timeout = null;
+
+    searchBox.addEventListener('input', function () {
+        clearTimeout(timeout);
+        timeout = setTimeout(function () {
+            const query = searchBox.value;
+            const url = new URL(window.location.href);
+            url.searchParams.set('searchString', query);
+            window.location.href = url.toString();
+        }, 500); // opóźnienie 500ms
+    });
+
+     document.querySelectorAll('.category-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('categoryFilter');
+
+            document.querySelectorAll('.category-checkbox:checked').forEach(checkedBox => {
+                url.searchParams.append('categoryFilter', checkedBox.value);
+            });
+
+            // Dodaj flagę, żeby dropdown był otwarty po przeładowaniu
+            url.searchParams.set('keepDropdownOpen', 'true');
+
+            window.location.href = url.toString();
+        });
+    });
+
+    // Otwórz dropdown jeśli parametr istnieje
+    window.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('keepDropdownOpen') === 'true') {
+            const dropdownToggle = document.getElementById('filterDropdown');
+            const dropdown = new bootstrap.Dropdown(dropdownToggle);
+            dropdown.show();
+
+            // Usuń ten parametr z URL, żeby nie zostawał na stałe
+            urlParams.delete('keepDropdownOpen');
+            const newUrl = window.location.pathname + '?' + urlParams.toString();
+            window.history.replaceState({}, '', newUrl);
+        }
+    });
+
+    document.getElementById("favoriteOnly").addEventListener("change", function () {
+    const url = new URL(window.location.href);
+    if (this.checked) {
+        url.searchParams.set('favoriteOnly', 'true');
+    } else {
+        url.searchParams.delete('favoriteOnly');
+    }
+    window.location.href = url.toString();
+    });
+
+</script>
+
+

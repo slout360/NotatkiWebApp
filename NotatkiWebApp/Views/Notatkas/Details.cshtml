@@ -1,0 +1,37 @@
+﻿@model NotatkiWebApp.Models.Notatka
+
+@{
+    ViewData["Title"] = "Szczegóły notatki";
+}
+
+<div class="card shadow-sm mt-4">
+    <div class="card-body position-relative">
+        <form asp-action="ToggleFavorite" method="post" class="position-absolute top-0 end-0 m-3">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <input type="hidden" name="returnUrl" value="@Url.Action("Details", new { id = Model.Id })" />
+            <button type="submit" class="btn btn-link p-0 border-0">
+                @if (Model.Ulubiona)
+                {
+                    <i class="bi bi-heart-fill text-danger fs-4"></i>
+                }
+                else
+                {
+                    <i class="bi bi-heart text-muted fs-4"></i>
+                }
+            </button>
+        </form>
+
+        <h3 class="card-title">@Model.Tytul</h3>
+        <p class="text-muted">Utworzono: @Model.DataUtworzenia.ToString("dd.MM.yyyy HH:mm")</p>
+        <h6 class="badge @CategoryColorHelper.GetBadgeClass(Model.Kategoria.ToString())">@Model.Kategoria</h6>
+        <p class="card-text mt-3" style="white-space: pre-wrap; word-break: break-word;">@Html.Raw(Model.Tresc?.TrimStart())</p>
+        @if (Model.DataEdycji != null)
+        {
+            <p class="text-muted">Ostatnio edytowano: @Model.DataEdycji?.ToString("dd.MM.yyyy HH:mm")</p>
+        }
+    </div>
+    <div class="card-footer d-flex justify-content-between">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Edytuj</a>
+        <a asp-action="Index" class="btn btn-outline-primary">Powrót</a>
+    </div>
+</div>
